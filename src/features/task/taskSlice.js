@@ -1,9 +1,14 @@
-import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { firestoreApi } from "../../app/fireStoreApi";
 import { db } from "../../firebase";
-import { fakeBaseQuery } from "@reduxjs/toolkit/dist/query";
-
-
 
 export const taskApi = firestoreApi.injectEndpoints({
   endpoints: (build) => ({
@@ -30,9 +35,7 @@ export const taskApi = firestoreApi.injectEndpoints({
     addTask: build.mutation({
       async queryFn({ task, taskId, userName, created, complete }) {
         console.log("addTask triggered");
-        // console.log(userName);
         try {
-          // console.log(task);
           const docRef = setDoc(doc(db, `users/${userName}/tasks`, taskId), {
             id: taskId,
             task,
@@ -40,8 +43,6 @@ export const taskApi = firestoreApi.injectEndpoints({
             complete,
           });
           return { data: docRef.id };
-
-          // return {data : null}
         } catch (error) {
           console.log(error);
           return { error: error.message };
@@ -50,34 +51,55 @@ export const taskApi = firestoreApi.injectEndpoints({
       invalidatesTags: ["Task"],
     }),
 
-
     completeTask: build.mutation({
-      async queryFn({taskId}) {
-        console.log('completeTask triggered');
-        console.log(taskId);
+      async queryFn({ taskId }) {
+        console.log("completeTask triggered");
         try {
           //users - Juho - tasks - taskId - complete
-          const docRef = doc(db, `users/${"Juho"}/tasks/${taskId}`)
-          const docSnapShot = await getDoc(docRef)
+          const docRef = doc(db, `users/${"Juho"}/tasks/${taskId}`);
+          const docSnapShot = await getDoc(docRef);
           let currentCompleteValue;
           if (docSnapShot.exists()) {
-            currentCompleteValue = docSnapShot.data().complete
+            currentCompleteValue = docSnapShot.data().complete;
           }
           await updateDoc(docRef, {
-            complete: !currentCompleteValue
-          })
+            complete: !currentCompleteValue,
+          });
 
-          return {data: null}
+          return { data: "return value from completeTask queryFn" };
         } catch (error) {
-          return {error: error.message}
+          return { error: error.message };
         }
       },
-      invalidatesTags: ["Task"]
-    })
 
+      async onQueryStarted({ taskId }, { dispatch, queryFulfilled }) {
+        console.log("onQueryStarted");
+        
+        try {
+          const patchResult = dispatch(
+            firestoreApi.util.updateQueryData("getTask", "Juho", (draft) => {
+              // console.log("callback!!!!!!!!!!!!!!!!!!!!!");
+              // console.log(JSON.stringify(draft))
+              // console.log(taskId)
+              // console.log(JSON.stringify(draft.find(item => item.id === taskId)))
+              const targetToChange = draft.find(item => item.id === taskId)
+              targetToChange.complete = !targetToChange.complete
+            })
+          );
 
+          await queryFulfilled;
+          console.log("success");
 
+        } catch (error) {
+          console.log("error");
+          patchResult.undo();
+        }
+      },
+
+      invalidatesTags: ["Task"],
+    }),
   }),
 });
 
-export const { useGetTaskQuery, useAddTaskMutation, useCompleteTaskMutation } = taskApi;
+export const { useGetTaskQuery, useAddTaskMutation, useCompleteTaskMutation } =
+  taskApi;

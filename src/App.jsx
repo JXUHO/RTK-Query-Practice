@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { db } from "./firebase";
-import { collection, addDoc } from "firebase/firestore";
 import { useDispatch, useSelector } from "react-redux";
 import {
   decrementReducer,
@@ -36,7 +34,6 @@ function App() {
   };
 
   const completeButtonClickHandler = (taskId) => {
-    console.log(taskId);
     completeTask({taskId})
   };
 
